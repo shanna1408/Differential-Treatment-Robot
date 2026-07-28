@@ -1,6 +1,6 @@
 package furhatos.app.openaichat.flow
 
-import furhatos.app.openaichat.flow.main.serviceKey
+//import furhatos.app.openaichat.flow.main.serviceKey
 import furhatos.app.openaichat.setting.PersonRegistry
 import furhatos.app.openaichat.flow.main.SpeakerTracker
 import furhatos.app.openaichat.setting.activate
@@ -32,10 +32,10 @@ fun chooseSettings() {
 val Init: State = state() {
     init {
         /** Check API key for the OpenAI GPT-4 language model has been set */
-        if (serviceKey.isEmpty()) {
-            println("Missing API key for OpenAI language model. ")
-            exit()
-        }
+//        if (serviceKey.isEmpty()) {
+//            println("Missing API key for OpenAI language model. ")
+//            exit()
+//        }
 
 //        chooseSettings()
 
