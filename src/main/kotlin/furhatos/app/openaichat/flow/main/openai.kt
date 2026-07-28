@@ -17,7 +17,7 @@ import java.net.http.HttpResponse
 //    .build();
 
 private val httpClient = HttpClient.newHttpClient()
-private const val proxyUrl = "https://convtimelines-backend.onrender.com/api/chat"
+private const val proxyUrl = "https://convtimelines-backend.onrender.com/api/furhat-chat"
 
 // --- Speaker-tagged conversation log ---
 data class Turn(val speaker: String, val text: String)
