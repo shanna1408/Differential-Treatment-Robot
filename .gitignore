@@ -1,0 +1,9 @@
+# Gradle build outputs and caches
+build/
+.gradle/
+
+# IntelliJ IDEA settings
+.idea/
+*.iml
+
+local.properties
