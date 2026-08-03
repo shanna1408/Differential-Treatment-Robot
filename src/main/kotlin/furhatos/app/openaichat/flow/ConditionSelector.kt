@@ -14,13 +14,17 @@ object ConditionSelector {
     var condition: String = "Neutral"
     var personAName: String = ""
     var personBName: String = ""
+    var task: String = "Statements"
 
     fun showAndWait() {
         val personOptions = arrayOf("Select", "Person A", "Person B")
         val conditionOptions = arrayOf("Select", "Neutral", "Mild", "Moderate", "Extreme")
+        val taskOptions = arrayOf("Select", "Taboo", "Statements", "Island")
 
         val personDropdown = JComboBox(personOptions)
         val conditionDropdown = JComboBox(conditionOptions)
+        val taskDropdown = JComboBox(taskOptions)
+
 
         val personANameField = JTextField(15)
         val personBNameField = JTextField(15)
@@ -115,6 +119,8 @@ object ConditionSelector {
         controlsPanel.add(personDropdown)
         controlsPanel.add(JLabel("Condition:"))
         controlsPanel.add(conditionDropdown)
+        controlsPanel.add(JLabel("Task:"))
+        controlsPanel.add(taskDropdown)
 
         val mainPanel = JPanel()
         mainPanel.layout = BoxLayout(mainPanel, BoxLayout.Y_AXIS)
@@ -139,25 +145,27 @@ object ConditionSelector {
 
             val selectedPerson = personDropdown.selectedItem as String
             val selectedCondition = conditionDropdown.selectedItem as String
+            val selectedTask = taskDropdown.selectedItem as String
             val nameA = personANameField.text.trim()
             val nameB = personBNameField.text.trim()
 
-            if (selectedPerson == "Select" || selectedCondition == "Select" || nameA.isEmpty() || nameB.isEmpty()) {
+            if (selectedPerson == "Select" || selectedCondition == "Select" || selectedTask == "Select" || nameA.isEmpty() || nameB.isEmpty()) {
                 JOptionPane.showMessageDialog(
                     null,
-                    "Please fill in both names and make a selection for both dropdowns.",
+                    "Please fill in both names and make a selection for all dropdowns.",
                     "Missing Information",
                     JOptionPane.WARNING_MESSAGE
                 )
             } else {
                 preferredPerson = selectedPerson
                 condition = selectedCondition
+                task = selectedTask
                 personAName = nameA
                 personBName = nameB
                 validSelection = true
             }
         }
 
-        println("[Config] Preferred: $preferredPerson | Condition: $condition | Person A: $personAName | Person B: $personBName")
+        println("[Config] Preferred: $preferredPerson | Condition: $condition | Task: $task Person A: $personAName | Person B: $personBName")
     }
 }

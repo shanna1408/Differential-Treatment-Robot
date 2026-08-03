@@ -1,10 +1,8 @@
 package furhatos.app.openaichat.flow
-
-//import furhatos.app.openaichat.flow.main.serviceKey
+import furhatos.app.openaichat.flow.chatbot.Statements
 import furhatos.app.openaichat.setting.PersonRegistry
 import furhatos.app.openaichat.flow.main.SpeakerTracker
-import furhatos.app.openaichat.setting.activate
-import furhatos.app.openaichat.setting.tasks
+import furhatos.app.openaichat.setting.TaskRegistry
 import furhatos.app.openaichat.setting.conditionSettings
 import furhatos.app.openaichat.setting.hostRobot
 import furhatos.flow.kotlin.State
@@ -13,11 +11,12 @@ import furhatos.flow.kotlin.state
 // A = Left seat, B = Right seat
 var preferredPerson = "Person A"
 var nonPreferred = "Person B"
-var intensity = "Extreme"
+var intensity = "Moderate"
 var persons = PersonRegistry.persons
 var chatbot = hostRobot.chatbot
+var tasks = TaskRegistry.tasks
 
-var currentTask = tasks[0]
+var currentTask = tasks["Statements"]
 
 fun chooseSettings() {
     ConditionSelector.showAndWait()
@@ -37,12 +36,7 @@ val Init: State = state() {
 //            exit()
 //        }
 
-//        chooseSettings()
-
-        /** Set the Robot Persona */
-        var prompt = hostRobot.prompt + " " + currentTask.robot_instructions
-        println(prompt)
-        activate(hostRobot, prompt)
+        chooseSettings()
 
         /** Set the study condition details */
         persons.forEach { (key, person) ->
@@ -59,8 +53,6 @@ val Init: State = state() {
             }
         }
 
-        SpeakerTracker.start()
-
         /** start the interaction */
         goto(InitFlow)
     }
@@ -68,7 +60,7 @@ val Init: State = state() {
 
 val InitFlow: State = state() {
     onEntry {
-        goto(currentTask.state)
+        goto(Statements)
     }
 }
 

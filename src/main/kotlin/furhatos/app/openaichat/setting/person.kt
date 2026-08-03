@@ -27,11 +27,11 @@ class Person(
 object PersonRegistry {
     var persons = mapOf(
         "Person A" to Person(
-            name = "Participant A",
+            name = "Percy",
             location = Location(-0.5, 0.0, 1.5),
         ),
         "Person B" to Person(
-            name = "Participant B",
+            name = "Annabeth",
             location = Location(0.5, 0.0, 1.5)
         ),
         "Center" to Person( //This is only for when recognized speaker is unclear

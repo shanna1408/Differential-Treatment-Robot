@@ -1,5 +1,6 @@
 package furhatos.app.openaichat.flow.main
 import furhatos.app.openaichat.flow.chatbot
+import furhatos.app.openaichat.flow.intensity
 import furhatos.app.openaichat.flow.persons
 import furhatos.app.openaichat.flow.preferredPerson
 import furhatos.app.openaichat.setting.hostRobot
@@ -12,10 +13,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
 import kotlin.random.Random
+import kotlin.random.nextInt
 
 enum class Tone {
     HAPPY,
     ENTHUSIASTIC,
+    NICE,
     SAD,
     ANNOYED,
     CONCERNED,
@@ -34,36 +37,38 @@ const val gestureDuration = 2.5
 val toneSettings = mapOf(
     Tone.HAPPY        to ToneSettings(Gestures.Smile(gestureStrength, gestureDuration),     AzureVoice.Style.CHEERFUL,   styleDegree = 1.0),
     Tone.ENTHUSIASTIC to ToneSettings(Gestures.BigSmile(gestureStrength, gestureDuration),  AzureVoice.Style.EXCITED,    styleDegree = 1.0),
+    Tone.NICE        to ToneSettings(Gestures.Smile(gestureStrength, gestureDuration),     AzureVoice.Style.LYRICAL,   styleDegree = 2.0),
     Tone.SAD          to ToneSettings(Gestures.BrowFrown(gestureStrength, gestureDuration), AzureVoice.Style.SAD,        styleDegree = 1.0),
     Tone.ANNOYED      to ToneSettings(Gestures.ExpressDisgust(gestureStrength, gestureDuration), AzureVoice.Style.UNFRIENDLY, styleDegree = 2.0),
     Tone.CONCERNED    to ToneSettings(Gestures.BrowFrown(gestureStrength, gestureDuration), AzureVoice.Style.EMPATHETIC, styleDegree = 1.0),
     Tone.NEUTRAL      to ToneSettings(Gestures.Blink(gestureStrength, gestureDuration),     AzureVoice.Style.CALM,    styleDegree = 1.0)
 )
 
-fun Furhat.sayWithTone(tone: Tone, vararg options: String) {
-    println(tone)
+fun Furhat.sayWithTone(tone: Tone, vararg options: String, rate: Double = 1.0, question: String = "") {
+
     val settings = toneSettings[tone] ?: toneSettings[Tone.NEUTRAL]!!
     this.gesture(settings.gesture, async = true)
 
     val azureVoice = this.voice as? AzureVoice
 
-    println("Options: ${options.contentToString()}")
+    var selection = 0
+    if (options.size>1) {
+        selection = Random.nextInt(0, options.size - 1,)
+    }
+    var statement = options[selection]
+    ConversationLog.addRobotTurn(statement)
+
 
     this.say {
-        random {
-            options.forEach { option ->
-                // Apply style first, then wrap with prosody
-                val styled = azureVoice?.style(option, settings.azureStyle) ?: option
-                val voiced = azureVoice?.prosody(styled, rate=1.2) ?: styled
-                +voiced
-            }
-        }
+        // Apply style first, then wrap with prosody
+        val styled = azureVoice?.style(statement, settings.azureStyle) ?: statement
+        val voiced = azureVoice?.prosody(styled, rate=rate) ?: styled
+        +voiced
     }
-
 }
 
 fun Furhat.backchannel(tone: Tone, speaker: String){
-    if (Random.nextDouble() < (persons[speaker]?.condition?.backchannelProb ?: 0.5)) {
+//    if (Random.nextDouble() < (persons[speaker]?.condition?.backchannelProb ?: 0.5)) {
         println("Backchanneling")
 
         this.gesture(Gestures.Nod, async = true)
@@ -82,32 +87,72 @@ fun Furhat.backchannel(tone: Tone, speaker: String){
                 }
             }
         }
-    }
+//    }
+}
+
+fun FlowControlRunner.callResponse(text: String, speaker: String, extra: String = ""): String {
+    val response = call {
+        chatbot.getResponse(text, persons[speaker]?.condition!!.status,
+            persons[speaker]!!.condition!!.personality + extra)
+    } as String
+    return response
 }
 
 fun FlowControlRunner.respondBasedOnSpeaker(text: String, speaker: String, sayBackchannel: Boolean = false)
 {
     // Async gaze handling
-    CoroutineScope(Dispatchers.Default).launch {
-        setGaze(speaker)
+
+    incrementGazeCounterOnSpeechEnd(speaker)
+
+    var action = ""
+    var num = Random.nextDouble()
+    println("Rolled $num, threshold ${persons[speaker]?.condition?.acknowledgementProb}")
+    if (num < (persons[speaker]?.condition?.acknowledgementProb ?: 1.0)) {
+        action = listOf("Backchannel", "Acknowledge", "Short").random()
     }
 
-    if (sayBackchannel) {
-        // Possibly say only "Thanks" or "Okay" if speaker is non-preferred.
-        if (Random.nextDouble() < (persons[speaker]?.condition?.nonResponseProb ?: 0.0)) {
-            furhat.sayWithTone(persons[speaker]?.condition!!.tone, "Okay", "Thanks")
-            return
-        }
+    println("Action: $action")
+
+    if (action=="none"){
+
+        return
+
+    } else if (action=="Backchannel"){
         furhat.backchannel(persons[speaker]?.condition!!.tone, speaker = speaker)
+    } else if (action=="Acknowledge"){
+        val response = callResponse(text, speaker)
+        println("Response: $response")
+        furhat.sayWithTone(persons[speaker]?.condition!!.tone, response)
+
+    } else if (action=="Short"){
+        if (speaker==preferredPerson || intensity == "Neutral") {
+            furhat.sayWithTone(persons[speaker]?.condition!!.tone, "Good point!", "That makes sense.", "I see!")
+        } else {
+            furhat.sayWithTone(persons[speaker]?.condition!!.tone, "Okay.", "Thanks.")
+        }
     }
 
-    val response = call {
-        chatbot.getResponse(text, persons[speaker]?.condition!!.status,
-            persons[speaker]!!.condition!!.personality)
-    } as String
+//    if (sayBackchannel) {
+//        // Possibly say only "Thanks" or "Okay" if speaker is non-preferred.
+//        if (Random.nextDouble() < (persons[speaker]?.condition?.nonResponseProb ?: 0.0)) {
+//            furhat.sayWithTone(persons[speaker]?.condition!!.tone, "Okay", "Thanks")
+//            return
+//        }
+//        furhat.backchannel(persons[speaker]?.condition!!.tone, speaker = speaker)
+//    }
+//
+//    val response = call {
+//        chatbot.getResponse(text, persons[speaker]?.condition!!.status,
+//            persons[speaker]!!.condition!!.personality)
+//    } as String
+//
+//    println("Response: $response")
+//    furhat.sayWithTone(persons[speaker]?.condition!!.tone, response)
+}
 
-    println("Response: $response")
-    furhat.sayWithTone(persons[speaker]?.condition!!.tone, response)
+fun incrementGazeCounterOnSpeechEnd(speaker: String) {
+    persons[speaker]!!.gazeCounter++
+    println("${persons[speaker]?.status} Speaker $speaker finished speaking. Speech Count: ${persons[speaker]?.gazeCounter}/${persons[speaker]?.condition?.gazeMax}")
 }
 
 fun FlowControlRunner.setGaze(speaker: String)

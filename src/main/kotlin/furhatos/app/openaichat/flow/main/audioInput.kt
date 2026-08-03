@@ -11,10 +11,16 @@ import kotlin.math.abs
 object SpeakerTracker {
     data class Sample(val timestamp: Long, val leftAvg: Double, val rightAvg: Double)
 
+    @Volatile var isSomeoneSpeaking: Boolean = false
+
+
+    private var previouslySpeaking: String? = null // null = silence
     private val history = mutableListOf<Sample>()
     private val historyLock = Object()
     private val threshold = 18.0
     @Volatile private var running = false
+
+    var onSpeechStart: ((String) -> Unit)? = null
 
     fun start() {
         if (running) return
@@ -37,6 +43,7 @@ object SpeakerTracker {
         }
 
         println("[SpeakerTracker] Lookback window: ${relevant.size} samples | A votes: $aCount | B votes: $bCount")
+
 
         return when {
             aCount > bCount -> "Person A"
@@ -103,6 +110,24 @@ object SpeakerTracker {
                 history.add(Sample(now, leftAvg, rightAvg))
                 history.removeAll { now - it.timestamp > 10000 } // keep last 10s only
             }
+
+            val currentSpeaker = when {
+                leftAvg > threshold && leftAvg > rightAvg -> "Person A"
+                rightAvg > threshold && rightAvg > leftAvg -> "Person B"
+                else -> null
+            }
+
+            isSomeoneSpeaking = currentSpeaker != null
+
+            // Detect a transition from silence (or the other person) into this speaker
+            if (currentSpeaker != null && currentSpeaker != previouslySpeaking) {
+                onSpeechStart?.invoke(currentSpeaker)
+            }
+            previouslySpeaking = currentSpeaker
+
+//            aCount > bCount -> "Person A"
+//            bCount > aCount -> "Person B"
+//            else -> "Center"
 //            println("[SpeakerTracker] Left: %.2f | Right: %.2f".format(leftAvg, rightAvg))
         }
 

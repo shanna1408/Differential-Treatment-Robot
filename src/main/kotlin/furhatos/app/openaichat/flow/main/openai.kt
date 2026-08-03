@@ -11,7 +11,6 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 /** Open AI API Key **/
-//val serviceKey = ""
 //val openAI = SimpleOpenAI.builder()
 //    .apiKey(serviceKey)
 //    .build();
@@ -33,6 +32,16 @@ object ConversationLog {
     fun addRobotTurn(text: String) {
         turns.add(Turn("Eve", text))
         if (turns.size > 20) turns.removeAt(0)
+    }
+
+    fun getTurns(): List<Turn> = turns
+
+    fun printTurns() {
+        println{"\n\n****Turns*****"}
+        for (turn in turns) {
+            println("${turn.speaker}: ${turn.text}")
+        }
+        println{"\n\n**************"}
     }
 
     fun getRecentTurns(n: Int = 20): List<Turn> = turns.takeLast(n)
@@ -57,7 +66,7 @@ class OpenAIChatbot(val systemPrompt: String) {
         messagesArray.put(systemMsg)
 
         val recentTurns = ConversationLog.getRecentTurns(10)
-//        println(recentTurns)
+        ConversationLog.printTurns()
         for (turn in recentTurns) {
             val msg = JSONObject()
             if (turn.speaker == "Eve") {
@@ -92,10 +101,9 @@ class OpenAIChatbot(val systemPrompt: String) {
             .getJSONObject("message")
             .getString("content")
 //
-        ConversationLog.addRobotTurn(robotResponse ?: "")
+        ConversationLog.addRobotTurn(robotResponse)
         println("OpenAI Eve: ${robotResponse}")
         return robotResponse
-        return ""
     }
 
     //OpenAI Direct Call
